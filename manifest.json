@@ -3,10 +3,14 @@
   "name": "Tab Organizer",
   "version": "1.0.0",
   "description": "Sort tabs, remove duplicates, group by domain, and save tabs and groups for later.",
-  "permissions": ["tabs", "tabGroups", "storage"],
+  "minimum_chrome_version": "116",
+  "permissions": ["tabs", "tabGroups", "storage", "sidePanel", "favicon"],
   "background": {
     "service_worker": "background.js",
     "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "icons": {
     "16": "icons/icon16.png",

@@ -12,6 +12,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
+// The manifest enables the side panel by default, so apply the popup's switch on every start.
+chrome.storage.sync.get({ sidePanel: false }).then(({ sidePanel }) =>
+  chrome.sidePanel.setOptions({ enabled: sidePanel }),
+);
+
 chrome.tabs.onUpdated.addListener(async (_tabId, changeInfo, tab) => {
   if (!changeInfo.url) return;
   const { autoGroup } = await chrome.storage.sync.get({ autoGroup: false });

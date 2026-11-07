@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tab Organizer</title>
+    <link rel="stylesheet" href="popup.css" />
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header class="panel-header">
+      <div class="panel-bar">
+        <p id="stats" class="panel-stats">Loading…</p>
+        <div class="panel-actions" role="toolbar" aria-label="Tab actions">
+          <button id="search-toggle" class="btn btn-icon btn-ghost" aria-expanded="false" aria-controls="search-row" aria-label="Search tabs" title="Search tabs (/)">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#search" /></svg>
+          </button>
+          <button id="sort" class="btn btn-icon btn-ghost" aria-haspopup="menu" aria-label="Sort tabs" title="Sort tabs">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#sort" /></svg>
+          </button>
+          <button id="group-toggle" class="btn btn-icon btn-ghost" aria-pressed="false" aria-label="Group by domain" title="Group by domain">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#group" /></svg>
+          </button>
+          <button id="collapse-toggle" class="btn btn-icon btn-ghost" aria-label="Collapse all groups" title="Collapse all groups">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#collapse-all" /></svg>
+          </button>
+          <button id="theme-toggle" class="btn btn-icon btn-ghost" aria-label="Switch to dark mode" title="Switch to dark mode">
+            <svg class="icon icon-moon" aria-hidden="true"><use href="icons/ui-icons.svg#suspend" /></svg>
+            <svg class="icon icon-sun" aria-hidden="true"><use href="icons/ui-icons.svg#sun" /></svg>
+          </button>
+        </div>
+      </div>
+      <div id="search-row" class="search-row" hidden>
+        <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#search" /></svg>
+        <input type="search" id="search" class="control" placeholder="Search tabs…" aria-label="Search tabs" autocomplete="off" />
+      </div>
+      <button id="new-tab" class="new-tab">
+        <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#plus" /></svg>
+        New tab
+      </button>
+    </header>
+
+    <main>
+      <ul id="tab-list" class="tab-list" aria-label="Tabs in this window"></ul>
+      <p id="search-empty" class="search-empty" hidden>No tabs match your search.</p>
+    </main>
+
+    <div id="menu" class="menu" role="menu" hidden></div>
+    <p id="status" class="panel-status" role="status" aria-live="polite"></p>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>

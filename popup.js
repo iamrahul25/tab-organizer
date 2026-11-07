@@ -6,8 +6,10 @@ const ICONS = "icons/ui-icons.svg";
 const CONFIRM_TIMEOUT_MS = 3000;
 const THEME_KEY = "theme";
 const $ = (id) => document.getElementById(id);
-const DEFAULTS = { sortKey: "url", reverse: false, dupMode: "url", autoGroup: false };
+const DEFAULTS = { sortKey: "url", reverse: false, dupMode: "url", autoGroup: false, sidePanel: false };
 let settings = { ...DEFAULTS };
+let sidePanelOpen = false;
+const currentWindow = await chrome.windows.getCurrent();
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -37,7 +39,7 @@ async function loadSettings() {
 
 function saveSettings(patch) {
   Object.assign(settings, patch);
-  chrome.storage.sync.set(settings);
+  chrome.storage.sync.set(patch);
 }
 
 async function refreshStats() {
@@ -50,6 +52,17 @@ async function refreshStats() {
 function refreshGroupButton() {
   $("group-toggle-label").textContent = settings.autoGroup ? "Ungroup" : "Group by domain";
   $("group-toggle").setAttribute("aria-pressed", String(settings.autoGroup));
+}
+
+// Read the real state: the user can close the panel with Chrome's own close button.
+async function loadSidePanelState() {
+  const contexts = await chrome.runtime.getContexts({ contextTypes: ["SIDE_PANEL"] });
+  sidePanelOpen = contexts.some((c) => c.windowId === currentWindow.id);
+}
+
+function refreshSidePanelButton() {
+  $("side-panel-toggle-label").textContent = sidePanelOpen ? "Hide side panel" : "Show side panel";
+  $("side-panel-toggle").setAttribute("aria-pressed", String(sidePanelOpen));
 }
 
 function applyTheme(theme) {
@@ -130,6 +143,7 @@ async function run(action) {
     buttons.forEach((b) => (b.disabled = false));
     $("main").removeAttribute("aria-busy");
     refreshGroupButton();
+    refreshSidePanelButton();
     await Promise.all([refreshStats(), refreshUndo()]);
   }
 }
@@ -209,6 +223,28 @@ $("group-toggle").addEventListener("click", () =>
   }),
 );
 
+// sidePanel.open() only works during the click, so it must be called before anything is awaited.
+// sidePanel.close() needs Chrome 141; before that, disabling the panel is the only way to close it.
+$("side-panel-toggle").addEventListener("click", () =>
+  run(async () => {
+    const windowId = currentWindow.id;
+    if (!sidePanelOpen) {
+      await Promise.all([chrome.sidePanel.setOptions({ enabled: true }), chrome.sidePanel.open({ windowId })]);
+      saveSettings({ sidePanel: true });
+      sidePanelOpen = true;
+      return "Side panel shown.";
+    }
+    if (chrome.sidePanel.close) {
+      await chrome.sidePanel.close({ windowId });
+    } else {
+      await chrome.sidePanel.setOptions({ enabled: false });
+      saveSettings({ sidePanel: false });
+    }
+    sidePanelOpen = false;
+    return "Side panel hidden.";
+  }),
+);
+
 $("merge").addEventListener("click", () =>
   run(async () => {
     const n = await organizer.mergeWindows();
@@ -261,6 +297,7 @@ $("discard").addEventListener("click", () =>
 );
 
 applyTheme(localStorage.getItem(THEME_KEY) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-await loadSettings();
+await Promise.all([loadSettings(), loadSidePanelState()]);
 refreshGroupButton();
+refreshSidePanelButton();
 await Promise.all([refreshStats(), refreshUndo(), renderSessions()]);
