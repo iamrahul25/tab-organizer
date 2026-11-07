@@ -1,0 +1,121 @@
+:root {
+  --accent: #1a73e8;
+  --border: #dadce0;
+  --muted: #5f6368;
+  --error: #d93025;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 300px;
+  margin: 0;
+  padding: 14px;
+  font: 13px/1.4 system-ui, sans-serif;
+  color: #202124;
+}
+
+h1 {
+  font-size: 17px;
+  margin: 0;
+}
+
+h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+header {
+  margin-bottom: 10px;
+}
+
+.muted {
+  color: var(--muted);
+  margin: 2px 0 0;
+}
+
+section,
+.scope {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0 0 10px;
+}
+
+.scope {
+  display: flex;
+  gap: 14px;
+}
+
+.scope legend {
+  padding: 0 4px;
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.row > * {
+  flex: 1;
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+select {
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+button:hover:not(:disabled) {
+  background: #f1f3f4;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #1765cc;
+}
+
+#status {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--accent);
+}
+
+#status.error {
+  color: var(--error);
+}

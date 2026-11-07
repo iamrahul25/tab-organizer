@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Organizer",
+  "version": "1.0.0",
+  "description": "Sort tabs, remove duplicates, group by domain, and tidy up your windows.",
+  "permissions": ["tabs", "tabGroups", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Tab Organizer"
+  }
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tab Organizer</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Tab Organizer</h1>
+      <p id="stats" class="muted">Loading…</p>
+    </header>
+
+    <fieldset class="scope">
+      <legend>Apply to</legend>
+      <label><input type="radio" name="scope" value="current" /> This window</label>
+      <label><input type="radio" name="scope" value="all" /> All windows</label>
+    </fieldset>
+
+    <section>
+      <h2>Sort tabs</h2>
+      <div class="row">
+        <select id="sort-key">
+          <option value="url">By URL</option>
+          <option value="domain">By domain</option>
+          <option value="title">By title</option>
+          <option value="recent">Recently used first</option>
+        </select>
+        <label class="inline"><input type="checkbox" id="sort-reverse" /> Reverse</label>
+      </div>
+      <button id="sort" class="primary">Sort tabs</button>
+    </section>
+
+    <section>
+      <h2>Duplicate tabs</h2>
+      <label class="inline"><input type="checkbox" id="ignore-hash" /> Ignore #fragment in URL</label>
+      <button id="dedupe" class="primary">Remove duplicates</button>
+    </section>
+
+    <section>
+      <h2>Groups</h2>
+      <div class="row">
+        <button id="group-domain">Group by domain</button>
+        <button id="ungroup">Ungroup all</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>More</h2>
+      <div class="row">
+        <button id="merge">Merge all windows</button>
+        <button id="discard" title="Unload inactive tabs from memory without closing them">
+          Suspend inactive
+        </button>
+      </div>
+    </section>
+
+    <p id="status" role="status"></p>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
