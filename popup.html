@@ -6,66 +6,99 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header>
-      <h1>Tab Organizer</h1>
-      <p id="stats" class="muted">Loading…</p>
+    <header class="header">
+      <img src="icons/icon48.png" alt="" width="32" height="32" />
+      <div class="header-text">
+        <h1>Tab Organizer</h1>
+        <p id="stats" class="stats">Loading…</p>
+      </div>
     </header>
 
-    <section>
-      <h2>Sort tabs</h2>
-      <div class="row">
-        <select id="sort-key">
-          <option value="url">By URL</option>
-          <option value="domain">By domain</option>
-          <option value="title">By title</option>
-          <option value="recent">Recently used first</option>
-        </select>
-        <label class="inline"><input type="checkbox" id="sort-reverse" /> Reverse</label>
-      </div>
-      <div class="row actions">
-        <button id="sort" class="primary">Sort tabs</button>
-        <button id="shuffle" class="shrink" title="Put tabs in random order">Shuffle</button>
-        <button id="undo-sort" class="shrink" title="Restore the order from before the last sort or shuffle" disabled>
-          Undo
+    <main id="main">
+      <section class="card" aria-labelledby="sort-title">
+        <h2 id="sort-title">
+          <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#sort" /></svg>
+          Sort tabs
+        </h2>
+        <div class="row">
+          <label class="sr-only" for="sort-key">Sort by</label>
+          <select id="sort-key" class="control grow">
+            <option value="url">By URL</option>
+            <option value="domain">By domain</option>
+            <option value="title">By title</option>
+            <option value="recent">Recently used first</option>
+          </select>
+          <button id="sort-reverse" class="btn" aria-pressed="false">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#reverse" /></svg>
+            Reverse
+          </button>
+        </div>
+        <div class="row">
+          <button id="sort" class="btn btn-primary grow">Sort tabs</button>
+          <button id="shuffle" class="btn">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#shuffle" /></svg>
+            Shuffle
+          </button>
+          <button id="undo-sort" class="btn btn-icon" aria-label="Undo last sort or shuffle" title="Undo last sort or shuffle" disabled>
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#undo" /></svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="dup-title">
+        <h2 id="dup-title">
+          <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#duplicates" /></svg>
+          Duplicate tabs
+        </h2>
+        <div class="row">
+          <label class="sr-only" for="dup-mode">Match duplicates by</label>
+          <select id="dup-mode" class="control grow" title="Same domain keeps one tab per site">
+            <option value="url">Same URL</option>
+            <option value="domain">Same domain</option>
+          </select>
+          <button id="dedupe" class="btn btn-primary">
+            <span id="dedupe-label">Remove duplicates</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="tidy-title">
+        <h2 id="tidy-title">
+          <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#group" /></svg>
+          Tidy up
+        </h2>
+        <button id="group-toggle" class="btn" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#group" /></svg>
+          <span id="group-toggle-label">Group by domain</span>
         </button>
-      </div>
-    </section>
+        <div class="row">
+          <button id="merge" class="btn grow">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#merge" /></svg>
+            Merge windows
+          </button>
+          <button id="discard" class="btn grow" title="Unload background tabs from memory without closing them">
+            <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#suspend" /></svg>
+            Suspend inactive
+          </button>
+        </div>
+      </section>
 
-    <section>
-      <h2>Duplicate tabs</h2>
-      <select id="dup-mode" class="full">
-        <option value="url">Same URL</option>
-        <option value="domain">Same domain (keep one tab per site)</option>
-      </select>
-      <button id="dedupe" class="primary">Remove duplicates</button>
-    </section>
+      <section class="card" aria-labelledby="saved-title">
+        <h2 id="saved-title">
+          <svg class="icon" aria-hidden="true"><use href="icons/ui-icons.svg#save" /></svg>
+          Saved tabs &amp; groups
+        </h2>
+        <div class="row">
+          <label class="sr-only" for="session-name">Session name</label>
+          <input type="text" id="session-name" class="control grow" placeholder="Name this window (optional)" maxlength="60" />
+          <button id="save-session" class="btn btn-primary">Save</button>
+        </div>
+        <p id="sessions-empty" class="empty">No saved sessions yet.</p>
+        <ul id="session-list" class="session-list" aria-label="Saved sessions"></ul>
+      </section>
+    </main>
 
-    <section>
-      <h2>Groups</h2>
-      <button id="group-toggle" class="full">Group by domain</button>
-    </section>
-
-    <section>
-      <h2>Saved tabs &amp; groups</h2>
-      <div class="row">
-        <input type="text" id="session-name" placeholder="Name (optional)" maxlength="60" />
-        <button id="save-session" class="shrink">Save</button>
-      </div>
-      <p id="sessions-empty" class="muted">No saved sessions yet.</p>
-      <ul id="session-list"></ul>
-    </section>
-
-    <section>
-      <h2>More</h2>
-      <div class="row">
-        <button id="merge">Merge all windows</button>
-        <button id="discard" title="Unload inactive tabs from memory without closing them">
-          Suspend inactive
-        </button>
-      </div>
-    </section>
-
-    <p id="status" role="status"></p>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
 
     <script type="module" src="popup.js"></script>
   </body>

@@ -1,146 +1,286 @@
+/* Design tokens: Minimalism & Swiss style, "SaaS (General)" palette from ui-ux-pro-max. */
 :root {
-  --accent: #1a73e8;
-  --border: #dadce0;
-  --muted: #5f6368;
-  --error: #d93025;
+  color-scheme: light dark;
+
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-on-primary: #ffffff;
+  --color-primary-text: #2563eb;
+  --color-background: #f8fafc;
+  --color-foreground: #1e293b;
+  --color-card: #ffffff;
+  --color-muted: #e9eff8;
+  --color-muted-foreground: #475569;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-destructive: #dc2626;
+  --color-on-destructive: #ffffff;
+  --color-success: #15803d;
+  --color-ring: #2563eb;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --control-height: 34px;
+  --duration: 150ms;
+  --font-sans: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
-* {
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary-hover: #3b82f6;
+    --color-primary-text: #60a5fa;
+    --color-background: #0f172a;
+    --color-foreground: #e2e8f0;
+    --color-card: #1e293b;
+    --color-muted: #334155;
+    --color-muted-foreground: #94a3b8;
+    --color-border: #334155;
+    --color-border-strong: #475569;
+    --color-destructive: #f87171;
+    --color-on-destructive: #0f172a;
+    --color-success: #4ade80;
+    --color-ring: #60a5fa;
+  }
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
-  width: 300px;
+  width: 340px;
   margin: 0;
-  padding: 14px;
-  font: 13px/1.4 system-ui, sans-serif;
-  color: #202124;
+  padding: 10px var(--space-3);
+  font: 400 13px/1.5 var(--font-sans);
+  color: var(--color-foreground);
+  background: var(--color-background);
 }
 
-h1 {
-  font-size: 17px;
-  margin: 0;
-}
+/* Header */
 
-h2 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin: 0 0 6px;
-}
-
-header {
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-bottom: 10px;
 }
 
-.muted {
-  color: var(--muted);
-  margin: 2px 0 0;
+.header-text {
+  min-width: 0;
 }
 
-section {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  margin: 0 0 10px;
+h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 2px 0 0;
+  color: var(--color-muted-foreground);
+}
+
+.chip {
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-muted);
+  color: var(--color-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Cards */
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 10px var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+h2 .icon {
+  color: var(--color-primary-text);
 }
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: center;
 }
 
-.row > * {
+.grow {
   flex: 1;
-}
-
-.inline {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-select {
-  padding: 5px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-button {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  font: inherit;
-}
-
-button:hover:not(:disabled) {
-  background: #f1f3f4;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-button.primary {
-  width: 100%;
-  margin-top: 8px;
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-button.primary:hover:not(:disabled) {
-  background: #1765cc;
-}
-
-.full {
-  width: 100%;
-}
-
-.actions {
-  margin-top: 8px;
-}
-
-.actions button.primary {
-  margin-top: 0;
-}
-
-input[type="text"] {
-  padding: 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font: inherit;
   min-width: 0;
 }
 
-.row > .shrink {
-  flex: 0 0 auto;
+.empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
 }
 
-#sessions-empty {
-  margin-top: 8px;
+.icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-#session-list {
-  list-style: none;
-  margin: 8px 0 0;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Form controls */
+
+.control {
+  height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font: inherit;
+  transition: border-color var(--duration) ease-out;
+}
+
+.control:hover {
+  border-color: var(--color-muted-foreground);
+}
+
+.control::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+/* Buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration) ease-out,
+    border-color var(--duration) ease-out,
+    color var(--duration) ease-out;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--color-muted);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+}
+
+.btn-icon {
+  width: var(--control-height);
   padding: 0;
-  max-height: 180px;
+}
+
+.btn[aria-pressed="true"] {
+  border-color: var(--color-primary-text);
+  background: var(--color-muted);
+  color: var(--color-primary-text);
+}
+
+.btn-danger,
+.btn-danger:hover:not(:disabled) {
+  border-color: var(--color-destructive);
+  background: var(--color-destructive);
+  color: var(--color-on-destructive);
+}
+
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-muted-foreground);
+}
+
+.btn-ghost.danger-hover:hover:not(:disabled) {
+  color: var(--color-destructive);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Saved sessions */
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 176px;
   overflow-y: auto;
 }
 
-#session-list li {
+.session-list li {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   padding: 6px 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-border);
 }
 
 .session-info {
@@ -148,33 +288,57 @@ input[type="text"] {
   min-width: 0;
 }
 
-.session-info strong,
-.session-info span {
+.session-name,
+.session-meta {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.session-info span {
-  color: var(--muted);
+.session-name {
+  font-weight: 500;
+}
+
+.session-meta {
   font-size: 12px;
+  color: var(--color-muted-foreground);
 }
 
-#session-list button {
-  padding: 4px 8px;
+.session-list .btn {
+  height: 30px;
+  padding: 0 var(--space-2);
 }
 
-#session-list button.danger:hover:not(:disabled) {
-  color: var(--error);
+.session-list .btn-icon {
+  width: 30px;
+  padding: 0;
 }
 
-#status {
-  min-height: 1.4em;
-  margin: 0;
-  color: var(--accent);
+/* Status */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  margin: var(--space-2) 0 0;
+  font-weight: 500;
+  color: var(--color-success);
 }
 
-#status.error {
-  color: var(--error);
+.status.error {
+  color: var(--color-destructive);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: none;
+  }
 }
