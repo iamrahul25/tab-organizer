@@ -12,13 +12,24 @@ export function getDomain(url) {
   }
 }
 
-function duplicateKey(url, ignoreHash) {
-  if (!ignoreHash) return url;
+// "youtube.com" -> "youtube", "chromestore.google" -> "chromestore".
+// IP addresses are kept whole since their first segment is meaningless.
+function groupName(url) {
+  const domain = getDomain(url);
+  if (!domain) return "Other";
+  if (/^\d+(\.\d+){3}$/.test(domain) || domain.startsWith("[")) return domain;
+  return domain.split(".")[0];
+}
+
+// "url": same page, ignoring any #fragment. "domain": same site, whatever the path
+// (www.github.com/a and github.com/b match). Tabs without a domain fall back to their URL.
+function duplicateKey(url, mode) {
+  if (mode === "domain") return getDomain(url) || url;
   const hashIndex = url.indexOf("#");
   return hashIndex === -1 ? url : url.slice(0, hashIndex);
 }
 
-async function getWindows(scope) {
+export async function getWindows(scope) {
   if (scope === "all") {
     return chrome.windows.getAll({ populate: true, windowTypes: ["normal"] });
   }
@@ -34,17 +45,80 @@ const COMPARATORS = {
   recent: (a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0),
 };
 
+function shuffle(items) {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
 function sortedIds(tabs, key, reverse) {
-  const sorted = [...tabs].sort(COMPARATORS[key]);
+  const sorted = key === "random" ? shuffle([...tabs]) : [...tabs].sort(COMPARATORS[key]);
   if (reverse) sorted.reverse();
   return sorted.map((tab) => tab.id);
+}
+
+const UNDO_KEY = "sortUndo";
+
+function orderSnapshot(windows) {
+  return windows.map((win) => ({
+    windowId: win.id,
+    tabs: win.tabs.filter((t) => !t.pinned).map((t) => ({ id: t.id, groupId: t.groupId })),
+  }));
+}
+
+export async function canUndoSort() {
+  const { [UNDO_KEY]: snapshot } = await chrome.storage.session.get(UNDO_KEY);
+  return Boolean(snapshot);
+}
+
+// Rebuilds the pre-sort order one unit at a time (a lone tab or a whole group), left to right.
+// Each unit lands right after the previous one, so it can never be dropped inside another group.
+// Tabs closed, moved to another window, or regrouped since the sort are skipped.
+export async function undoSort() {
+  const { [UNDO_KEY]: snapshot } = await chrome.storage.session.get(UNDO_KEY);
+  if (!snapshot) throw new Error("Nothing to undo.");
+
+  let restored = 0;
+  for (const { windowId, tabs: saved } of snapshot) {
+    const current = await chrome.tabs.query({ windowId });
+    const byId = new Map(current.map((t) => [t.id, t]));
+
+    const units = [];
+    for (const { id, groupId } of saved) {
+      const tab = byId.get(id);
+      if (!tab || tab.pinned || tab.groupId !== groupId) continue;
+      const last = units.at(-1);
+      if (groupId !== NO_GROUP && last?.groupId === groupId) last.ids.push(id);
+      else units.push({ groupId, ids: [id] });
+    }
+
+    let index = current.filter((t) => t.pinned).length;
+    for (const { groupId, ids } of units) {
+      if (groupId === NO_GROUP) {
+        await chrome.tabs.move(ids[0], { index });
+        index += 1;
+      } else {
+        await chrome.tabGroups.move(groupId, { index });
+        await chrome.tabs.move(ids, { index });
+        await chrome.tabs.group({ groupId, tabIds: ids });
+        index += (await chrome.tabs.query({ groupId })).length;
+      }
+      restored += ids.length;
+    }
+  }
+  await chrome.storage.session.remove(UNDO_KEY);
+  return restored;
 }
 
 // Pinned tabs stay put. Tabs inside a group are sorted within that group;
 // ungrouped tabs are sorted and placed after the groups.
 export async function sortTabs(scope, key, reverse) {
+  const windows = await getWindows(scope);
+  const snapshot = orderSnapshot(windows);
   let count = 0;
-  for (const win of await getWindows(scope)) {
+  for (const win of windows) {
     const ungrouped = win.tabs.filter((t) => !t.pinned && t.groupId === NO_GROUP);
     if (ungrouped.length > 1) {
       const ids = sortedIds(ungrouped, key, reverse);
@@ -67,11 +141,12 @@ export async function sortTabs(scope, key, reverse) {
       count += ids.length;
     }
   }
+  if (count) await chrome.storage.session.set({ [UNDO_KEY]: snapshot });
   return count;
 }
 
-function findDuplicates(tabs, ignoreHash) {
-  const byUrl = Map.groupBy(tabs, (t) => duplicateKey(tabUrl(t), ignoreHash));
+function findDuplicates(tabs, mode) {
+  const byUrl = Map.groupBy(tabs, (t) => duplicateKey(tabUrl(t), mode));
   const toClose = [];
   for (const group of byUrl.values()) {
     if (group.length < 2) continue;
@@ -87,9 +162,9 @@ function findDuplicates(tabs, ignoreHash) {
   return toClose;
 }
 
-export async function removeDuplicates(scope, ignoreHash) {
+export async function removeDuplicates(scope, mode) {
   const tabs = (await getWindows(scope)).flatMap((w) => w.tabs);
-  const duplicates = findDuplicates(tabs, ignoreHash);
+  const duplicates = findDuplicates(tabs, mode);
   if (duplicates.length) await chrome.tabs.remove(duplicates.map((t) => t.id));
   return duplicates.length;
 }
@@ -99,7 +174,7 @@ export async function groupByDomain(scope) {
   for (const win of await getWindows(scope)) {
     const byDomain = Map.groupBy(
       win.tabs.filter((t) => !t.pinned),
-      (t) => getDomain(tabUrl(t)) || "Other",
+      (t) => groupName(tabUrl(t)),
     );
     const existing = await chrome.tabGroups.query({ windowId: win.id });
     let colorIndex = existing.length;
@@ -123,13 +198,55 @@ export async function groupByDomain(scope) {
   return created;
 }
 
-export async function ungroupAll(scope) {
-  const ids = (await getWindows(scope))
-    .flatMap((w) => w.tabs)
-    .filter((t) => t.groupId !== NO_GROUP)
-    .map((t) => t.id);
-  if (ids.length) await chrome.tabs.ungroup(ids);
-  return ids.length;
+// A group counts as one of ours if its title matches the domain name of a tab inside it,
+// so user-made groups like "Work" are left alone.
+function isDomainGroup(group, tabs) {
+  return tabs.some((t) => t.groupId === group.id && groupName(tabUrl(t)) === group.title);
+}
+
+// Ungrouping (unlike closing) deletes the group, so Chrome drops it from saved groups.
+export async function removeDomainGroups() {
+  const [groups, tabs] = await Promise.all([chrome.tabGroups.query({}), chrome.tabs.query({})]);
+  const groupIds = new Set(groups.filter((g) => isDomainGroup(g, tabs)).map((g) => g.id));
+  const tabIds = tabs.filter((t) => groupIds.has(t.groupId)).map((t) => t.id);
+  if (tabIds.length) await chrome.tabs.ungroup(tabIds);
+  return groupIds.size;
+}
+
+export async function autoGroupTab(tab) {
+  const url = tabUrl(tab);
+  if (tab.pinned || !/^https?:/.test(url)) return;
+
+  const name = groupName(url);
+  const [groups, tabs] = await Promise.all([
+    chrome.tabGroups.query({ windowId: tab.windowId }),
+    chrome.tabs.query({ windowId: tab.windowId }),
+  ]);
+  const others = tabs.filter((t) => t.id !== tab.id);
+  const current = groups.find((g) => g.id === tab.groupId);
+  if (current && (current.title === name || !isDomainGroup(current, others))) return;
+
+  const target = groups.find((g) => g.title === name);
+  if (target) {
+    await chrome.tabs.group({ groupId: target.id, tabIds: [tab.id] });
+    return;
+  }
+
+  const peers = others.filter(
+    (t) => !t.pinned && t.groupId === NO_GROUP && groupName(tabUrl(t)) === name,
+  );
+  if (!peers.length) {
+    if (current) await chrome.tabs.ungroup(tab.id);
+    return;
+  }
+  const groupId = await chrome.tabs.group({
+    tabIds: [...peers.map((t) => t.id), tab.id],
+    createProperties: { windowId: tab.windowId },
+  });
+  await chrome.tabGroups.update(groupId, {
+    title: name,
+    color: GROUP_COLORS[groups.length % GROUP_COLORS.length],
+  });
 }
 
 export async function mergeWindows() {
@@ -165,12 +282,7 @@ export async function discardInactive(scope) {
   return results.filter((r) => r.status === "fulfilled" && r.value).length;
 }
 
-export async function getStats(scope, ignoreHash) {
-  const windows = await getWindows(scope);
-  const tabs = windows.flatMap((w) => w.tabs);
-  return {
-    tabs: tabs.length,
-    windows: windows.length,
-    duplicates: findDuplicates(tabs, ignoreHash).length,
-  };
+export async function getStats(scope, mode) {
+  const tabs = (await getWindows(scope)).flatMap((w) => w.tabs);
+  return { tabs: tabs.length, duplicates: findDuplicates(tabs, mode).length };
 }

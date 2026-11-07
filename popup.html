@@ -11,12 +11,6 @@
       <p id="stats" class="muted">Loading…</p>
     </header>
 
-    <fieldset class="scope">
-      <legend>Apply to</legend>
-      <label><input type="radio" name="scope" value="current" /> This window</label>
-      <label><input type="radio" name="scope" value="all" /> All windows</label>
-    </fieldset>
-
     <section>
       <h2>Sort tabs</h2>
       <div class="row">
@@ -28,21 +22,37 @@
         </select>
         <label class="inline"><input type="checkbox" id="sort-reverse" /> Reverse</label>
       </div>
-      <button id="sort" class="primary">Sort tabs</button>
+      <div class="row actions">
+        <button id="sort" class="primary">Sort tabs</button>
+        <button id="shuffle" class="shrink" title="Put tabs in random order">Shuffle</button>
+        <button id="undo-sort" class="shrink" title="Restore the order from before the last sort or shuffle" disabled>
+          Undo
+        </button>
+      </div>
     </section>
 
     <section>
       <h2>Duplicate tabs</h2>
-      <label class="inline"><input type="checkbox" id="ignore-hash" /> Ignore #fragment in URL</label>
+      <select id="dup-mode" class="full">
+        <option value="url">Same URL</option>
+        <option value="domain">Same domain (keep one tab per site)</option>
+      </select>
       <button id="dedupe" class="primary">Remove duplicates</button>
     </section>
 
     <section>
       <h2>Groups</h2>
+      <button id="group-toggle" class="full">Group by domain</button>
+    </section>
+
+    <section>
+      <h2>Saved tabs &amp; groups</h2>
       <div class="row">
-        <button id="group-domain">Group by domain</button>
-        <button id="ungroup">Ungroup all</button>
+        <input type="text" id="session-name" placeholder="Name (optional)" maxlength="60" />
+        <button id="save-session" class="shrink">Save</button>
       </div>
+      <p id="sessions-empty" class="muted">No saved sessions yet.</p>
+      <ul id="session-list"></ul>
     </section>
 
     <section>

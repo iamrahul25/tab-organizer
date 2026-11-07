@@ -39,22 +39,11 @@ header {
   margin: 2px 0 0;
 }
 
-section,
-.scope {
+section {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px;
   margin: 0 0 10px;
-}
-
-.scope {
-  display: flex;
-  gap: 14px;
-}
-
-.scope legend {
-  padding: 0 4px;
-  color: var(--muted);
 }
 
 .row {
@@ -108,6 +97,76 @@ button.primary {
 
 button.primary:hover:not(:disabled) {
   background: #1765cc;
+}
+
+.full {
+  width: 100%;
+}
+
+.actions {
+  margin-top: 8px;
+}
+
+.actions button.primary {
+  margin-top: 0;
+}
+
+input[type="text"] {
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  min-width: 0;
+}
+
+.row > .shrink {
+  flex: 0 0 auto;
+}
+
+#sessions-empty {
+  margin-top: 8px;
+}
+
+#session-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+#session-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-info strong,
+.session-info span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-info span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+#session-list button {
+  padding: 4px 8px;
+}
+
+#session-list button.danger:hover:not(:disabled) {
+  color: var(--error);
 }
 
 #status {
