@@ -4,6 +4,7 @@ import * as sessions from "./sessions.js";
 const SCOPE = "current";
 const ICONS = "icons/ui-icons.svg";
 const CONFIRM_TIMEOUT_MS = 3000;
+const THEME_KEY = "theme";
 const $ = (id) => document.getElementById(id);
 const DEFAULTS = { sortKey: "url", reverse: false, dupMode: "url", autoGroup: false };
 let settings = { ...DEFAULTS };
@@ -49,6 +50,13 @@ async function refreshStats() {
 function refreshGroupButton() {
   $("group-toggle-label").textContent = settings.autoGroup ? "Ungroup" : "Group by domain";
   $("group-toggle").setAttribute("aria-pressed", String(settings.autoGroup));
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  $("theme-toggle").setAttribute("aria-label", label);
+  $("theme-toggle").title = label;
 }
 
 async function refreshUndo() {
@@ -141,6 +149,12 @@ function armDelete(button) {
     button.replaceChildren(icon("trash"));
   }, CONFIRM_TIMEOUT_MS);
 }
+
+$("theme-toggle").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
 
 $("sort-key").addEventListener("change", (e) => saveSettings({ sortKey: e.target.value }));
 
@@ -246,6 +260,7 @@ $("discard").addEventListener("click", () =>
   }),
 );
 
+applyTheme(localStorage.getItem(THEME_KEY) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 await loadSettings();
 refreshGroupButton();
 await Promise.all([refreshStats(), refreshUndo(), renderSessions()]);
