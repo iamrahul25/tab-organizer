@@ -6,7 +6,9 @@ const ICONS = "icons/ui-icons.svg";
 const CONFIRM_TIMEOUT_MS = 3000;
 const THEME_KEY = "theme";
 const $ = (id) => document.getElementById(id);
-const DEFAULTS = { sortKey: "url", reverse: false, dupMode: "url", autoGroup: false, sidePanel: false };
+// Fixed by the popup layout: duplicates are matched by URL and sorts run in forward order.
+const DUP_MODE = "url";
+const DEFAULTS = { zoom: 100, sortKey: "url", reverse: false, dupMode: "url", autoGroup: false, sidePanel: false };
 let settings = { ...DEFAULTS };
 let sidePanelOpen = false;
 const currentWindow = await chrome.windows.getCurrent();
@@ -33,8 +35,24 @@ function chip(text) {
 async function loadSettings() {
   settings = await chrome.storage.sync.get(DEFAULTS);
   $("sort-key").value = settings.sortKey;
-  $("sort-reverse").setAttribute("aria-pressed", String(settings.reverse));
-  $("dup-mode").value = settings.dupMode;
+}
+
+function applyZoom(percent) {
+  document.documentElement.style.zoom = String(percent / 100);
+  $("zoom").value = String(percent);
+  $("zoom-value").textContent = `${percent}%`;
+}
+
+function setZoom(percent) {
+  const value = Math.min(130, Math.max(80, Math.round(percent / 5) * 5));
+  applyZoom(value);
+  saveSettings({ zoom: value });
+}
+
+function showSettings(show) {
+  $("settings").hidden = !show;
+  $("main").hidden = show;
+  $("settings-toggle").setAttribute("aria-expanded", String(show));
 }
 
 function saveSettings(patch) {
@@ -43,9 +61,9 @@ function saveSettings(patch) {
 }
 
 async function refreshStats() {
-  const { tabs, duplicates } = await organizer.getStats(SCOPE, settings.dupMode);
+  const { tabs, duplicates } = await organizer.getStats(SCOPE, DUP_MODE);
   $("stats").replaceChildren(chip(plural(tabs, "tab")), chip(plural(duplicates, "duplicate")));
-  $("dedupe-label").textContent = duplicates ? `Close ${plural(duplicates, "duplicate")}` : "No duplicates";
+  $("dedupe-label").textContent = duplicates ? `Close ${plural(duplicates, "tab")}` : "No duplicates";
   $("dedupe").disabled = duplicates === 0;
 }
 
@@ -56,13 +74,26 @@ function refreshGroupButton() {
 
 // Read the real state: the user can close the panel with Chrome's own close button.
 async function loadSidePanelState() {
-  const contexts = await chrome.runtime.getContexts({ contextTypes: ["SIDE_PANEL"] });
-  sidePanelOpen = contexts.some((c) => c.windowId === currentWindow.id);
+  let open = false;
+  try {
+    const reply = await chrome.runtime.sendMessage({ type: "sidePanelPing" });
+    open = reply?.windowId === currentWindow.id;
+  } catch {
+    // No side panel page is listening, so it is closed.
+  }
+  if (!open) {
+    try {
+      const contexts = await chrome.runtime.getContexts({ contextTypes: ["SIDE_PANEL"] });
+      open = contexts.some((c) => c.windowId === currentWindow.id);
+    } catch {
+      // Older Chrome builds can't list contexts.
+    }
+  }
+  sidePanelOpen = open;
 }
 
 function refreshSidePanelButton() {
-  $("side-panel-toggle-label").textContent = sidePanelOpen ? "Hide side panel" : "Show side panel";
-  $("side-panel-toggle").setAttribute("aria-pressed", String(sidePanelOpen));
+  $("side-panel-toggle").setAttribute("aria-checked", String(sidePanelOpen));
 }
 
 function applyTheme(theme) {
@@ -70,10 +101,6 @@ function applyTheme(theme) {
   const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
   $("theme-toggle").setAttribute("aria-label", label);
   $("theme-toggle").title = label;
-}
-
-async function refreshUndo() {
-  $("undo-sort").disabled = !(await organizer.canUndoSort());
 }
 
 function sessionMeta(session) {
@@ -120,7 +147,6 @@ function sessionItem(session) {
 
 async function renderSessions() {
   const saved = await sessions.listSessions();
-  $("sessions-empty").hidden = saved.length > 0;
   $("session-list").hidden = saved.length === 0;
   $("session-list").replaceChildren(...saved.map(sessionItem));
 }
@@ -144,7 +170,7 @@ async function run(action) {
     $("main").removeAttribute("aria-busy");
     refreshGroupButton();
     refreshSidePanelButton();
-    await Promise.all([refreshStats(), refreshUndo()]);
+    await refreshStats();
   }
 }
 
@@ -170,42 +196,25 @@ $("theme-toggle").addEventListener("click", () => {
   applyTheme(next);
 });
 
+$("settings-toggle").addEventListener("click", () => showSettings($("settings").hidden));
+$("settings-back").addEventListener("click", () => showSettings(false));
+$("zoom").addEventListener("input", (e) => setZoom(Number(e.target.value)));
+$("zoom-in").addEventListener("click", () => setZoom(settings.zoom + 5));
+$("zoom-out").addEventListener("click", () => setZoom(settings.zoom - 5));
+$("zoom-reset").addEventListener("click", () => setZoom(100));
+
 $("sort-key").addEventListener("change", (e) => saveSettings({ sortKey: e.target.value }));
-
-$("sort-reverse").addEventListener("click", (e) => {
-  saveSettings({ reverse: !settings.reverse });
-  e.currentTarget.setAttribute("aria-pressed", String(settings.reverse));
-});
-
-$("dup-mode").addEventListener("change", (e) => {
-  saveSettings({ dupMode: e.target.value });
-  refreshStats();
-});
 
 $("sort").addEventListener("click", () =>
   run(async () => {
-    const n = await organizer.sortTabs(SCOPE, settings.sortKey, settings.reverse);
+    const n = await organizer.sortTabs(SCOPE, settings.sortKey, false);
     return n ? `Sorted ${plural(n, "tab")}.` : "Nothing to sort.";
-  }),
-);
-
-$("shuffle").addEventListener("click", () =>
-  run(async () => {
-    const n = await organizer.sortTabs(SCOPE, "random", false);
-    return n ? `Shuffled ${plural(n, "tab")}.` : "Nothing to shuffle.";
-  }),
-);
-
-$("undo-sort").addEventListener("click", () =>
-  run(async () => {
-    const n = await organizer.undoSort();
-    return n ? `Restored the order of ${plural(n, "tab")}.` : "Nothing left to restore.";
   }),
 );
 
 $("dedupe").addEventListener("click", () =>
   run(async () => {
-    const n = await organizer.removeDuplicates(SCOPE, settings.dupMode);
+    const n = await organizer.removeDuplicates(SCOPE, DUP_MODE);
     return `Closed ${plural(n, "duplicate tab")}.`;
   }),
 );
@@ -238,33 +247,21 @@ $("side-panel-toggle").addEventListener("click", () =>
       await chrome.sidePanel.close({ windowId });
     } else {
       await chrome.sidePanel.setOptions({ enabled: false });
-      saveSettings({ sidePanel: false });
     }
+    saveSettings({ sidePanel: false });
     sidePanelOpen = false;
     return "Side panel hidden.";
-  }),
-);
-
-$("merge").addEventListener("click", () =>
-  run(async () => {
-    const n = await organizer.mergeWindows();
-    return n ? `Moved ${plural(n, "tab")} into this window.` : "Only one window open.";
   }),
 );
 
 $("save-session").addEventListener("click", () =>
   run(async () => {
     const windows = await organizer.getWindows(SCOPE);
-    const session = await sessions.saveSession(windows, $("session-name").value.trim());
-    $("session-name").value = "";
+    const session = await sessions.saveSession(windows, "");
     await renderSessions();
     return `Saved "${session.name}" (${plural(sessions.sessionSummary(session).tabs, "tab")}).`;
   }),
 );
-
-$("session-name").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") $("save-session").click();
-});
 
 $("session-list").addEventListener("click", (e) => {
   const button = e.target.closest("button[data-action]");
@@ -297,7 +294,9 @@ $("discard").addEventListener("click", () =>
 );
 
 applyTheme(localStorage.getItem(THEME_KEY) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-await Promise.all([loadSettings(), loadSidePanelState()]);
+await loadSettings();
+applyZoom(settings.zoom);
+await loadSidePanelState();
 refreshGroupButton();
 refreshSidePanelButton();
-await Promise.all([refreshStats(), refreshUndo(), renderSessions()]);
+await Promise.all([refreshStats(), renderSessions()]);

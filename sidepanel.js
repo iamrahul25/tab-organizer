@@ -21,7 +21,19 @@ const SORT_OPTIONS = [
 ];
 
 const { id: windowId } = await chrome.windows.getCurrent();
+
+// Lets the popup tell whether this window's side panel is really open.
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "sidePanelPing") sendResponse({ windowId });
+});
 const settings = await chrome.storage.sync.get({ sortKey: "url", reverse: false, autoGroup: false });
+
+// Overall size (text, icons, images) is chosen in the popup's settings.
+const applyZoom = (percent) => (document.documentElement.style.zoom = String((percent || 100) / 100));
+applyZoom((await chrome.storage.sync.get({ zoom: 100 })).zoom);
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "sync" && changes.zoom) applyZoom(changes.zoom.newValue);
+});
 
 let tabs = [];
 let groups = new Map();
